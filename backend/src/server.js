@@ -5,6 +5,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import prisma from './lib/prisma.js';
 
+// Import routes
+import usersRouter from './routes/users.js';
+import conversationsRouter from './routes/conversations.js';
+import groupsRouter from './routes/groups.js';
+import uploadRouter from './routes/upload.js';
+
 dotenv.config();
 
 const app = express();
@@ -37,6 +43,12 @@ app.get('/health', (req, res) => {
     activeUsers: activeUsers.size
   });
 });
+
+// API Routes
+app.use('/api/users', usersRouter);
+app.use('/api/conversations', conversationsRouter);
+app.use('/api/groups', groupsRouter);
+app.use('/api/upload', uploadRouter);
 
 // Socket.io connection handler
 io.on('connection', (socket) => {
