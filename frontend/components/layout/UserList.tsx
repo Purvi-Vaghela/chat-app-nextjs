@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import Image from 'next/image';
 import { useChatStore } from '@/store/chatStore';
+import { socketClient } from '@/lib/socket';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -49,6 +50,12 @@ export default function UserList() {
         }
       );
       setActiveConversation(response.data);
+      
+      // Join conversation room via Socket.io
+      const socket = socketClient.getSocket();
+      if (socket) {
+        socket.emit('conversation:join', response.data.id);
+      }
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast.error('Failed to open chat');
