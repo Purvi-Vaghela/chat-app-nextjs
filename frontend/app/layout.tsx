@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import SessionProvider from "@/providers/SessionProvider";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
@@ -16,16 +17,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body className="h-full antialiased bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary">
-        <ThemeProvider>
-          {children}
-          <Toaster 
-            position="top-center"
-            toastOptions={{
-              duration: 3000,
-              className: 'dark:bg-dark-sidebar dark:text-dark-text-primary',
-            }}
-          />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            {children}
+            <Toaster 
+              position="top-center"
+              toastOptions={{
+                duration: 3000,
+                className: 'dark:bg-dark-sidebar dark:text-dark-text-primary',
+              }}
+            />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );
