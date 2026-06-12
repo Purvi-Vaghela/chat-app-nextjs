@@ -138,7 +138,7 @@ export default function MessageInput() {
       formData.append('folder', folder);
 
       const uploadResponse = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudName.toLowerCase()}/image/upload`,
         formData
       );
 
@@ -164,9 +164,10 @@ export default function MessageInput() {
       }
 
       toast.success('Image sent successfully', { id: uploadToast });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      toast.error('Failed to upload image', { id: uploadToast });
+      const errorMsg = error.response?.data?.error?.message || 'Failed to upload image';
+      toast.error(errorMsg, { id: uploadToast });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
