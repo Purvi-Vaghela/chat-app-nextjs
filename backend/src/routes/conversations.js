@@ -179,6 +179,72 @@ router.post('/find-or-create', async (req, res) => {
   }
 });
 
+// Get conversation by ID
+router.get('/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { userId } = req.query;
+    
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        messages: {
+          where: {
+            ...(userId && {
+              NOT: {
+                deletedFor: {
+                  has: userId
+                }
+              }
+            })
+          },
+          orderBy: {
+            createdAt: 'asc'
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+    
+    const participants = await prisma.user.findMany({
+      where: {
+        id: {
+          in: conversation.participantIds
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        isOnline: true,
+        lastSeen: true
+      }
+    });
+    
+    res.json({
+      ...conversation,
+      participants
+    });
+  } catch (error) {
+    console.error('Error fetching conversation:', error);
+    res.status(500).json({ error: 'Failed to fetch conversation' });
+  }
+});
+
 // Get messages for a conversation
 router.get('/:conversationId/messages', async (req, res) => {
   try {

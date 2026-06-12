@@ -79,22 +79,42 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setConversations: (conversations) => set({ conversations }),
   setGroups: (groups) => set({ groups }),
-  setActiveConversation: (conversation) => set({ 
-    activeConversation: conversation, 
-    activeGroup: null,
-    messages: conversation?.messages || [],
-    isSelectionMode: false,
-    selectedMessageIds: [],
-    isDeleteModalOpen: false
-  }),
-  setActiveGroup: (group) => set({ 
-    activeGroup: group, 
-    activeConversation: null,
-    messages: group?.messages || [],
-    isSelectionMode: false,
-    selectedMessageIds: [],
-    isDeleteModalOpen: false
-  }),
+  setActiveConversation: (conversation) => {
+    if (typeof window !== 'undefined') {
+      if (conversation) {
+        localStorage.setItem('activeConversationId', conversation.id);
+        localStorage.removeItem('activeGroupId');
+      } else {
+        localStorage.removeItem('activeConversationId');
+      }
+    }
+    set({ 
+      activeConversation: conversation, 
+      activeGroup: null,
+      messages: conversation?.messages || [],
+      isSelectionMode: false,
+      selectedMessageIds: [],
+      isDeleteModalOpen: false
+    });
+  },
+  setActiveGroup: (group) => {
+    if (typeof window !== 'undefined') {
+      if (group) {
+        localStorage.setItem('activeGroupId', group.id);
+        localStorage.removeItem('activeConversationId');
+      } else {
+        localStorage.removeItem('activeGroupId');
+      }
+    }
+    set({ 
+      activeGroup: group, 
+      activeConversation: null,
+      messages: group?.messages || [],
+      isSelectionMode: false,
+      selectedMessageIds: [],
+      isDeleteModalOpen: false
+    });
+  },
   setMessages: (messages) => set({ messages }),
   addMessage: (message) => set((state) => {
     const exists = state.messages.some((msg) => msg.id === message.id);
