@@ -5,7 +5,6 @@ import { BsMoonFill, BsSunFill, BsThreeDotsVertical } from 'react-icons/bs';
 import { IoLogOutOutline } from 'react-icons/io5';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 
 export default function SidebarHeader() {
   const { data: session } = useSession();
@@ -32,12 +31,12 @@ export default function SidebarHeader() {
       {/* User Info */}
       <div className="flex items-center gap-3">
         {session?.user?.image ? (
-          <Image
+          <img
             src={session.user.image}
             alt={session.user.name || 'User'}
             width={40}
             height={40}
-            className="rounded-full"
+            className="rounded-full w-10 h-10 object-cover"
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-semibold">

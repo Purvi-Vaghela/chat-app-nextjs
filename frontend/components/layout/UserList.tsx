@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
-import Image from 'next/image';
 import { useChatStore } from '@/store/chatStore';
 import { socketClient } from '@/lib/socket';
 import toast from 'react-hot-toast';
@@ -90,12 +89,12 @@ export default function UserList() {
           >
             <div className="relative">
               {user.image ? (
-                <Image
+                <img
                   src={user.image}
                   alt={user.name || user.email}
                   width={48}
                   height={48}
-                  className="rounded-full"
+                  className="rounded-full w-12 h-12 object-cover"
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-white font-semibold">

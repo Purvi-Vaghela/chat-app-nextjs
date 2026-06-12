@@ -1,7 +1,6 @@
 'use client';
 
 import { useChatStore } from '@/store/chatStore';
-import Image from 'next/image';
 import { BsPeopleFill, BsThreeDotsVertical } from 'react-icons/bs';
 
 export default function ChatHeader() {
@@ -24,12 +23,12 @@ export default function ChatHeader() {
           </div>
         ) : otherUser?.image ? (
           <div className="relative">
-            <Image
+            <img
               src={otherUser.image}
               alt={otherUser.name || 'User'}
               width={40}
               height={40}
-              className="rounded-full"
+              className="rounded-full w-10 h-10 object-cover"
             />
             {isOnline && (
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-accent rounded-full border-2 border-light-bg dark:border-dark-sidebar"></div>

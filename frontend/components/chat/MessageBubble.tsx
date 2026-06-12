@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { format } from 'date-fns';
 
 interface MessageBubbleProps {
@@ -36,12 +35,12 @@ export default function MessageBubble({
         <div className="w-8 h-8 flex-shrink-0">
           {showAvatar &&
             (message.sender.image ? (
-              <Image
+              <img
                 src={message.sender.image}
                 alt={message.sender.name || 'User'}
                 width={32}
                 height={32}
-                className="rounded-full"
+                className="rounded-full w-8 h-8 object-cover"
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-semibold">
@@ -71,12 +70,10 @@ export default function MessageBubble({
         >
           {message.imageUrl && (
             <div className="mb-2 rounded-lg overflow-hidden">
-              <Image
+              <img
                 src={message.imageUrl}
                 alt="Shared image"
-                width={300}
-                height={200}
-                className="object-cover"
+                className="max-w-full h-auto object-cover"
               />
             </div>
           )}
