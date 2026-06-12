@@ -96,6 +96,7 @@ export default function MessageBubble({
                   alt={message.sender.name || 'User'}
                   width={32}
                   height={32}
+                  referrerPolicy="no-referrer"
                   className="rounded-full w-8 h-8 object-cover"
                 />
               ) : (

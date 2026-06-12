@@ -15,7 +15,12 @@ interface User {
   isOnline: boolean;
 }
 
-export default function UserList() {
+interface UserListProps {
+  searchQuery?: string;
+  onSelectUser?: () => void;
+}
+
+export default function UserList({ searchQuery = '', onSelectUser }: UserListProps) {
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +55,10 @@ export default function UserList() {
       );
       setActiveConversation(response.data);
       
+      if (onSelectUser) {
+        onSelectUser();
+      }
+      
       // Join conversation room via Socket.io
       const socket = socketClient.getSocket();
       if (socket) {
@@ -61,6 +70,13 @@ export default function UserList() {
     }
   };
 
+  const filteredUsers = users.filter((user) => {
+    if (!searchQuery) return true;
+    const nameMatch = user.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const emailMatch = user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    return nameMatch || emailMatch;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -69,17 +85,17 @@ export default function UserList() {
     );
   }
 
-  if (users.length === 0) {
+  if (filteredUsers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-32 text-light-text-secondary dark:text-dark-text-secondary">
-        <p>No users found</p>
+        <p>No matching users found</p>
       </div>
     );
   }
 
   return (
     <div className="divide-y divide-light-border dark:divide-dark-border">
-      {users.map((user) => {
+      {filteredUsers.map((user) => {
         const isOnline = onlineUsers.has(user.id);
         return (
           <button
@@ -94,6 +110,7 @@ export default function UserList() {
                   alt={user.name || user.email}
                   width={48}
                   height={48}
+                  referrerPolicy="no-referrer"
                   className="rounded-full w-12 h-12 object-cover"
                 />
               ) : (

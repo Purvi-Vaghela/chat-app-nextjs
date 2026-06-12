@@ -13,8 +13,15 @@ export function useSocket() {
     const socket = socketClient.connect(session.user.id);
 
     // Listen for new messages in conversations
-    socket.on('message:new', (message: any) => {
+    socket.on('message:new', async (message: any) => {
       addMessage(message);
+
+      // If the conversation is not in the list, reload conversations list
+      const state = useChatStore.getState();
+      const hasConv = state.conversations.some((c) => c.id === message.conversationId);
+      if (!hasConv && session?.user?.id) {
+        await state.fetchConversations(session.user.id);
+      }
     });
 
     // Listen for new messages in groups

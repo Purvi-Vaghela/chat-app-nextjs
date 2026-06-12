@@ -30,6 +30,7 @@ export default function ChatHeader() {
               alt={otherUser.name || 'User'}
               width={40}
               height={40}
+              referrerPolicy="no-referrer"
               className="rounded-full w-10 h-10 object-cover"
             />
             {isOnline && (

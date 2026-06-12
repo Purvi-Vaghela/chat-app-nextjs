@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import axios from 'axios';
 
 interface Message {
   id: string;
@@ -14,6 +15,8 @@ interface Message {
   };
   isDeletedForEveryone?: boolean;
   deletedFor?: string[];
+  conversationId?: string | null;
+  groupId?: string | null;
 }
 
 interface Conversation {
@@ -63,6 +66,7 @@ interface ChatState {
   deleteMessagesLocally: (messageIds: string[]) => void;
   markMessagesDeletedForEveryone: (messageIds: string[]) => void;
   setDeleteModalOpen: (open: boolean) => void;
+  fetchConversations: (userId: string) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -119,7 +123,28 @@ export const useChatStore = create<ChatState>((set) => ({
   addMessage: (message) => set((state) => {
     const exists = state.messages.some((msg) => msg.id === message.id);
     if (exists) return {};
-    return { messages: [...state.messages, message] };
+    
+    // Update corresponding conversation's last message and updatedAt time
+    const updatedConversations = state.conversations.map((conv) => {
+      if (conv.id === message.conversationId) {
+        return {
+          ...conv,
+          messages: [message],
+          updatedAt: new Date(message.createdAt)
+        };
+      }
+      return conv;
+    });
+
+    // Re-sort conversations by updatedAt descending
+    const sortedConversations = [...updatedConversations].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+
+    return { 
+      messages: [...state.messages, message],
+      conversations: sortedConversations
+    };
   }),
   setTyping: (userId, isTyping) => set((state) => ({
     typingUsers: { ...state.typingUsers, [userId]: isTyping }
@@ -153,4 +178,14 @@ export const useChatStore = create<ChatState>((set) => ({
     )
   })),
   setDeleteModalOpen: (open) => set({ isDeleteModalOpen: open }),
+  fetchConversations: async (userId) => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/conversations/user/${userId}`
+      );
+      set({ conversations: response.data });
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  },
 }));

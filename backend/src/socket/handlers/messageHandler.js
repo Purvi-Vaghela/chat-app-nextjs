@@ -26,6 +26,12 @@ export const handleConversationMessage = (io) => (socket) => {
         }
       });
 
+      // Update conversation's updatedAt field
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() }
+      });
+
       // Broadcast message to conversation room
       io.to(`conversation:${conversationId}`).emit('message:new', message);
 
@@ -77,6 +83,12 @@ export const handleGroupMessage = (io) => (socket) => {
             }
           }
         }
+      });
+
+      // Update group's updatedAt field
+      await prisma.group.update({
+        where: { id: groupId },
+        data: { updatedAt: new Date() }
       });
 
       // Broadcast message to group room
