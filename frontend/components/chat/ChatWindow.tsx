@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useChatStore } from '@/store/chatStore';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
@@ -8,7 +9,23 @@ import SelectionActionBar from './SelectionActionBar';
 import EmptyChat from './EmptyChat';
 
 export default function ChatWindow() {
-  const { activeConversation, activeGroup, isSelectionMode } = useChatStore();
+  const { activeConversation, activeGroup, isSelectionMode, clearMessageSelection } = useChatStore();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearMessageSelection();
+      }
+    };
+
+    if (isSelectionMode) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSelectionMode, clearMessageSelection]);
 
   if (!activeConversation && !activeGroup) {
     return <EmptyChat />;
