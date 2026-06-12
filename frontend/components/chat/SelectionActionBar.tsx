@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { useChatStore } from '@/store/chatStore';
 import toast from 'react-hot-toast';
+import { socketClient } from '@/lib/socket';
 
 export default function SelectionActionBar() {
   const { data: session } = useSession();
@@ -16,10 +17,14 @@ export default function SelectionActionBar() {
     markMessagesDeletedForEveryone,
     isDeleteModalOpen,
     setDeleteModalOpen,
+    conversations,
+    groups,
   } = useChatStore();
 
   const [deleteMedia, setDeleteMedia] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
+  const [forwardSearch, setForwardSearch] = useState('');
 
   const selectedCount = selectedMessageIds.length;
   if (selectedCount === 0) return null;
@@ -65,6 +70,55 @@ export default function SelectionActionBar() {
     }
   };
 
+  const handleForward = async (target: { type: 'chat' | 'group'; id: string }) => {
+    setLoading(true);
+    try {
+      const selectedMsgs = selectedMessageIds
+        .map((id) => messages.find((m) => m.id === id))
+        .filter(Boolean) as any[];
+
+      for (const msg of selectedMsgs) {
+        const messageData = {
+          content: msg.content || '',
+          senderId: session?.user?.id,
+          imageUrl: msg.imageUrl || null,
+        };
+
+        if (target.type === 'chat') {
+          socketClient.emit('message:send', {
+            ...messageData,
+            conversationId: target.id,
+          });
+        } else {
+          socketClient.emit('group:message:send', {
+            ...messageData,
+            groupId: target.id,
+          });
+        }
+      }
+
+      toast.success(`Forwarded ${selectedMsgs.length} message(s)`);
+      clearMessageSelection();
+      setIsForwardModalOpen(false);
+    } catch (error) {
+      console.error('Error forwarding messages:', error);
+      toast.error('Failed to forward messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredConversations = conversations.filter((conv) => {
+    const otherUser = conv.participants?.find((p: any) => p.id !== session?.user?.id);
+    if (!otherUser) return false;
+    const name = otherUser.name || otherUser.email || 'Anonymous';
+    return name.toLowerCase().includes(forwardSearch.toLowerCase());
+  });
+
+  const filteredGroups = groups.filter((group) => {
+    return group.name.toLowerCase().includes(forwardSearch.toLowerCase());
+  });
+
   return (
     <>
       <div className="h-16 bg-light-bg dark:bg-dark-sidebar border-t border-light-border dark:border-dark-border px-6 flex items-center justify-between shadow-md select-none">
@@ -72,7 +126,7 @@ export default function SelectionActionBar() {
         <div className="flex items-center gap-4 text-light-text-primary dark:text-dark-text-primary">
           <button
             onClick={clearMessageSelection}
-            className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors"
+            className="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors cursor-pointer"
             aria-label="Cancel selection"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -89,7 +143,7 @@ export default function SelectionActionBar() {
           {/* Star Icon */}
           <button
             onClick={() => toast('Starred functionality coming soon!')}
-            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-accent"
+            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-accent cursor-pointer"
             title="Star message"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -100,7 +154,7 @@ export default function SelectionActionBar() {
           {/* Delete (Trash) Icon */}
           <button
             onClick={() => setDeleteModalOpen(true)}
-            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-red-500"
+            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-red-500 cursor-pointer"
             title="Delete message"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -110,23 +164,12 @@ export default function SelectionActionBar() {
 
           {/* Forward Icon */}
           <button
-            onClick={() => toast('Forwarding functionality coming soon!')}
-            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-accent"
+            onClick={() => setIsForwardModalOpen(true)}
+            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-accent cursor-pointer"
             title="Forward message"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6L15 4" />
-            </svg>
-          </button>
-
-          {/* Download Icon */}
-          <button
-            onClick={() => toast('Download functionality coming soon!')}
-            className="p-1.5 rounded hover:bg-light-hover dark:hover:bg-dark-hover transition-colors hover:text-accent"
-            title="Download media"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
           </button>
         </div>
@@ -169,14 +212,14 @@ export default function SelectionActionBar() {
                   <button
                     disabled={loading}
                     onClick={() => handleDelete('everyone')}
-                    className="w-full text-right px-4 py-2 text-accent hover:bg-light-hover dark:hover:bg-dark-hover rounded font-semibold transition-colors disabled:opacity-50"
+                    className="w-full text-right px-4 py-2 text-accent hover:bg-light-hover dark:hover:bg-dark-hover rounded font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     Delete for everyone
                   </button>
                   <button
                     disabled={loading}
                     onClick={() => handleDelete('me')}
-                    className="w-full text-right px-4 py-2 text-accent hover:bg-light-hover dark:hover:bg-dark-hover rounded font-semibold transition-colors disabled:opacity-50"
+                    className="w-full text-right px-4 py-2 text-accent hover:bg-light-hover dark:hover:bg-dark-hover rounded font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     Delete for me
                   </button>
@@ -185,7 +228,7 @@ export default function SelectionActionBar() {
                 <button
                   disabled={loading}
                   onClick={() => handleDelete('me')}
-                  className="w-full text-right px-4 py-2 text-accent hover:bg-light-hover dark:hover:bg-dark-hover rounded font-semibold transition-colors disabled:opacity-50"
+                  className="w-full text-right px-4 py-2 text-accent hover:bg-light-hover dark:hover:bg-dark-hover rounded font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   Delete for me
                 </button>
@@ -193,10 +236,117 @@ export default function SelectionActionBar() {
               <button
                 disabled={loading}
                 onClick={() => setDeleteModalOpen(false)}
-                className="w-full text-right px-4 py-2 text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors disabled:opacity-50"
+                className="w-full text-right px-4 py-2 text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forward Modal */}
+      {isForwardModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-light-bg dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl shadow-2xl p-6 w-full max-w-md text-light-text-primary dark:text-dark-text-primary transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                Forward {selectedCount} message{selectedCount === 1 ? '' : 's'} to
+              </h3>
+              <button
+                onClick={() => setIsForwardModalOpen(false)}
+                className="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text-primary dark:hover:text-dark-text-primary p-1 rounded cursor-pointer"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Search Destination */}
+            <div className="mb-4 relative">
+              <input
+                type="text"
+                placeholder="Search chats or groups..."
+                value={forwardSearch}
+                onChange={(e) => setForwardSearch(e.target.value)}
+                className="w-full bg-white dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent text-light-text-primary dark:text-dark-text-primary placeholder-light-text-secondary dark:placeholder-dark-text-secondary"
+              />
+            </div>
+
+            {/* Target List */}
+            <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+              {/* Chats Section */}
+              <div className="text-xs font-semibold text-light-text-secondary dark:text-dark-text-secondary px-2 py-1 uppercase tracking-wider">
+                Recent Chats
+              </div>
+              {filteredConversations.length === 0 && (
+                <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary px-2 py-2 italic">
+                  No chats found
+                </div>
+              )}
+              {filteredConversations.map((conv) => {
+                const otherUser = conv.participants?.find((p: any) => p.id !== session?.user?.id);
+                if (!otherUser) return null;
+                return (
+                  <button
+                    key={conv.id}
+                    disabled={loading}
+                    onClick={() => handleForward({ type: 'chat', id: conv.id })}
+                    className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors flex items-center gap-3 disabled:opacity-50 cursor-pointer"
+                  >
+                    {otherUser.image ? (
+                      <img
+                        src={otherUser.image}
+                        alt={otherUser.name || 'User'}
+                        width={32}
+                        height={32}
+                        referrerPolicy="no-referrer"
+                        className="rounded-full w-8 h-8 object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                        {otherUser.name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <span className="font-medium text-sm truncate">
+                      {otherUser.name || otherUser.email || 'Anonymous'}
+                    </span>
+                  </button>
+                );
+              })}
+
+              <div className="h-4"></div>
+
+              {/* Groups Section */}
+              <div className="text-xs font-semibold text-light-text-secondary dark:text-dark-text-secondary px-2 py-1 uppercase tracking-wider">
+                Groups
+              </div>
+              {filteredGroups.length === 0 && (
+                <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary px-2 py-2 italic">
+                  No groups found
+                </div>
+              )}
+              {filteredGroups.map((group) => {
+                return (
+                  <button
+                    key={group.id}
+                    disabled={loading}
+                    onClick={() => handleForward({ type: 'group', id: group.id })}
+                    className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors flex items-center gap-3 disabled:opacity-50 cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm flex-shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <span className="font-medium text-sm truncate">
+                      {group.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
