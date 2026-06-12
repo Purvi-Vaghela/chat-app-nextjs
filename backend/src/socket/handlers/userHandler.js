@@ -18,10 +18,38 @@ export const handleUserOnline = (io) => (socket) => {
         }
       });
 
+      // Auto-join conversation rooms
+      const conversations = await prisma.conversation.findMany({
+        where: {
+          participantIds: {
+            has: userId
+          }
+        },
+        select: { id: true }
+      });
+      conversations.forEach((conv) => {
+        socket.join(`conversation:${conv.id}`);
+      });
+
+      // Auto-join group rooms
+      const groups = await prisma.group.findMany({
+        where: {
+          members: {
+            some: {
+              userId
+            }
+          }
+        },
+        select: { id: true }
+      });
+      groups.forEach((g) => {
+        socket.join(`group:${g.id}`);
+      });
+
       // Broadcast to all clients that this user is online
       io.emit('user:status', { userId, isOnline: true });
       
-      console.log(`👤 User ${userId} is now online`);
+      console.log(`👤 User ${userId} is now online and joined ${conversations.length} chats & ${groups.length} groups`);
     } catch (error) {
       console.error('Error updating user online status:', error);
     }

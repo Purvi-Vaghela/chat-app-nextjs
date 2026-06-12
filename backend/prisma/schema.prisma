@@ -110,6 +110,9 @@ model Message {
   imageUrl  String?
   createdAt DateTime @default(now())
   
+  isDeletedForEveryone Boolean  @default(false)
+  deletedFor           String[] @db.ObjectId
+
   senderId  String   @db.ObjectId
   sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   

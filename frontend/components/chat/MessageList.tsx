@@ -7,7 +7,13 @@ import MessageBubble from './MessageBubble';
 
 export default function MessageList() {
   const { data: session } = useSession();
-  const { messages } = useChatStore();
+  const {
+    messages,
+    clearMessageSelection,
+    setSelectionMode,
+    toggleMessageSelection,
+    setDeleteModalOpen,
+  } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -17,6 +23,13 @@ export default function MessageList() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleDeleteMessageDirectly = (messageId: string) => {
+    clearMessageSelection();
+    setSelectionMode(true);
+    toggleMessageSelection(messageId);
+    setDeleteModalOpen(true);
+  };
 
   if (messages.length === 0) {
     return (
@@ -40,6 +53,7 @@ export default function MessageList() {
             message={message}
             isOwnMessage={isOwnMessage}
             showAvatar={showAvatar}
+            onDeleteMessage={handleDeleteMessageDirectly}
           />
         );
       })}

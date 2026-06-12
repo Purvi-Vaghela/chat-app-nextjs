@@ -40,6 +40,13 @@ router.get('/user/:userId', async (req, res) => {
           }
         },
         messages: {
+          where: {
+            NOT: {
+              deletedFor: {
+                has: userId
+              }
+            }
+          },
           orderBy: {
             createdAt: 'desc'
           },
@@ -140,6 +147,7 @@ router.post('/', async (req, res) => {
 router.get('/:groupId', async (req, res) => {
   try {
     const { groupId } = req.params;
+    const { userId } = req.query;
     
     const group = await prisma.group.findUnique({
       where: { id: groupId },
@@ -167,6 +175,15 @@ router.get('/:groupId', async (req, res) => {
           }
         },
         messages: {
+          where: {
+            ...(userId && {
+              NOT: {
+                deletedFor: {
+                  has: userId
+                }
+              }
+            })
+          },
           orderBy: {
             createdAt: 'asc'
           },
@@ -272,11 +289,18 @@ router.delete('/:groupId/members/:userId', async (req, res) => {
 router.get('/:groupId/messages', async (req, res) => {
   try {
     const { groupId } = req.params;
-    const { limit = 50, before } = req.query;
+    const { limit = 50, before, userId } = req.query;
     
     const messages = await prisma.message.findMany({
       where: {
         groupId,
+        ...(userId && {
+          NOT: {
+            deletedFor: {
+              has: userId
+            }
+          }
+        }),
         ...(before && {
           createdAt: {
             lt: new Date(before)

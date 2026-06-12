@@ -12,6 +12,8 @@ interface Message {
     email: string;
     image: string | null;
   };
+  isDeletedForEveryone?: boolean;
+  deletedFor?: string[];
 }
 
 interface Conversation {
@@ -43,6 +45,9 @@ interface ChatState {
   messages: Message[];
   typingUsers: { [key: string]: boolean };
   onlineUsers: Set<string>;
+  isSelectionMode: boolean;
+  selectedMessageIds: string[];
+  isDeleteModalOpen: boolean;
   
   setConversations: (conversations: Conversation[]) => void;
   setGroups: (groups: Group[]) => void;
@@ -52,6 +57,12 @@ interface ChatState {
   addMessage: (message: Message) => void;
   setTyping: (userId: string, isTyping: boolean) => void;
   setUserOnline: (userId: string, isOnline: boolean) => void;
+  setSelectionMode: (enabled: boolean) => void;
+  toggleMessageSelection: (messageId: string) => void;
+  clearMessageSelection: () => void;
+  deleteMessagesLocally: (messageIds: string[]) => void;
+  markMessagesDeletedForEveryone: (messageIds: string[]) => void;
+  setDeleteModalOpen: (open: boolean) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -62,23 +73,34 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   typingUsers: {},
   onlineUsers: new Set(),
+  isSelectionMode: false,
+  selectedMessageIds: [],
+  isDeleteModalOpen: false,
 
   setConversations: (conversations) => set({ conversations }),
   setGroups: (groups) => set({ groups }),
   setActiveConversation: (conversation) => set({ 
     activeConversation: conversation, 
     activeGroup: null,
-    messages: conversation?.messages || []
+    messages: conversation?.messages || [],
+    isSelectionMode: false,
+    selectedMessageIds: [],
+    isDeleteModalOpen: false
   }),
   setActiveGroup: (group) => set({ 
     activeGroup: group, 
     activeConversation: null,
-    messages: group?.messages || []
+    messages: group?.messages || [],
+    isSelectionMode: false,
+    selectedMessageIds: [],
+    isDeleteModalOpen: false
   }),
   setMessages: (messages) => set({ messages }),
-  addMessage: (message) => set((state) => ({ 
-    messages: [...state.messages, message] 
-  })),
+  addMessage: (message) => set((state) => {
+    const exists = state.messages.some((msg) => msg.id === message.id);
+    if (exists) return {};
+    return { messages: [...state.messages, message] };
+  }),
   setTyping: (userId, isTyping) => set((state) => ({
     typingUsers: { ...state.typingUsers, [userId]: isTyping }
   })),
@@ -91,4 +113,24 @@ export const useChatStore = create<ChatState>((set) => ({
     }
     return { onlineUsers: newOnlineUsers };
   }),
+  setSelectionMode: (enabled) => set({ isSelectionMode: enabled, selectedMessageIds: [], isDeleteModalOpen: false }),
+  toggleMessageSelection: (messageId) => set((state) => {
+    const selected = state.selectedMessageIds.includes(messageId);
+    const updated = selected
+      ? state.selectedMessageIds.filter((id) => id !== messageId)
+      : [...state.selectedMessageIds, messageId];
+    return { selectedMessageIds: updated };
+  }),
+  clearMessageSelection: () => set({ selectedMessageIds: [], isSelectionMode: false, isDeleteModalOpen: false }),
+  deleteMessagesLocally: (messageIds) => set((state) => ({
+    messages: state.messages.filter((msg) => !messageIds.includes(msg.id))
+  })),
+  markMessagesDeletedForEveryone: (messageIds) => set((state) => ({
+    messages: state.messages.map((msg) =>
+      messageIds.includes(msg.id)
+        ? { ...msg, isDeletedForEveryone: true, content: 'This message was deleted', imageUrl: null }
+        : msg
+    )
+  })),
+  setDeleteModalOpen: (open) => set({ isDeleteModalOpen: open }),
 }));

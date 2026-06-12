@@ -5,7 +5,7 @@ import { useChatStore } from '@/store/chatStore';
 
 export function useSocket() {
   const { data: session } = useSession();
-  const { addMessage, setTyping, setUserOnline } = useChatStore();
+  const { addMessage, setTyping, setUserOnline, markMessagesDeletedForEveryone } = useChatStore();
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -20,6 +20,13 @@ export function useSocket() {
     // Listen for new messages in groups
     socket.on('group:message:new', (message: any) => {
       addMessage(message);
+    });
+
+    // Listen for deleted messages
+    socket.on('messages:deleted', ({ messageIds, type }: any) => {
+      if (type === 'everyone') {
+        markMessagesDeletedForEveryone(messageIds);
+      }
     });
 
     // Listen for typing indicators
@@ -39,9 +46,10 @@ export function useSocket() {
     return () => {
       socket.off('message:new');
       socket.off('group:message:new');
+      socket.off('messages:deleted');
       socket.off('typing:update');
       socket.off('group:typing:update');
       socket.off('user:status');
     };
-  }, [session?.user?.id, addMessage, setTyping, setUserOnline]);
+  }, [session?.user?.id, addMessage, setTyping, setUserOnline, markMessagesDeletedForEveryone]);
 }

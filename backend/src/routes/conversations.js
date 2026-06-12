@@ -16,6 +16,13 @@ router.get('/user/:userId', async (req, res) => {
       },
       include: {
         messages: {
+          where: {
+            NOT: {
+              deletedFor: {
+                has: userId
+              }
+            }
+          },
           orderBy: {
             createdAt: 'desc'
           },
@@ -89,6 +96,13 @@ router.post('/find-or-create', async (req, res) => {
       },
       include: {
         messages: {
+          where: {
+            NOT: {
+              deletedFor: {
+                has: userId1
+              }
+            }
+          },
           orderBy: {
             createdAt: 'asc'
           },
@@ -169,11 +183,18 @@ router.post('/find-or-create', async (req, res) => {
 router.get('/:conversationId/messages', async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { limit = 50, before } = req.query;
+    const { limit = 50, before, userId } = req.query;
     
     const messages = await prisma.message.findMany({
       where: {
         conversationId,
+        ...(userId && {
+          NOT: {
+            deletedFor: {
+              has: userId
+            }
+          }
+        }),
         ...(before && {
           createdAt: {
             lt: new Date(before)

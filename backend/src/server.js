@@ -11,6 +11,7 @@ import usersRouter from './routes/users.js';
 import conversationsRouter from './routes/conversations.js';
 import groupsRouter from './routes/groups.js';
 import uploadRouter from './routes/upload.js';
+import messagesRouter from './routes/messages.js';
 
 // Import active users map for health check
 import { activeUsers } from './socket/handlers/userHandler.js';
@@ -30,6 +31,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Inject socket io into requests
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
@@ -44,6 +51,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/conversations', conversationsRouter);
 app.use('/api/groups', groupsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/messages', messagesRouter);
 
 // Start server
 const PORT = process.env.PORT || 4000;

@@ -1,16 +1,18 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
 import { useChatStore } from '@/store/chatStore';
 import { BsPeopleFill, BsThreeDotsVertical } from 'react-icons/bs';
 
 export default function ChatHeader() {
+  const { data: session } = useSession();
   const { activeConversation, activeGroup, onlineUsers } = useChatStore();
 
   if (!activeConversation && !activeGroup) return null;
 
   const isGroup = !!activeGroup;
   const otherUser = activeConversation?.participants?.find(
-    (p: any) => p.id !== activeConversation?.participantIds[0]
+    (p: any) => p.id !== session?.user?.id
   );
   const isOnline = otherUser ? onlineUsers.has(otherUser.id) : false;
 
