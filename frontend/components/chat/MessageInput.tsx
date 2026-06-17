@@ -20,6 +20,7 @@ export default function MessageInput() {
   const [isTyping, setIsTyping] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,73 +83,34 @@ export default function MessageInput() {
   };
 
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!message.trim() && selectedImages.length === 0) return;
 
-    const messageData = {
-      content: message.trim(),
-      senderId: session?.user?.id,
-      imageUrl: null,
-    };
+    // Send one message per image, or one message for text only
+    if (selectedImages.length > 0) {
+      selectedImages.forEach((imageUrl) => {
+        const messageData = {
+          content: message.trim(),
+          senderId: session?.user?.id,
+          imageUrl: imageUrl,
+        };
 
-    if (activeConversation) {
-      socketClient.emit('message:send', {
-        ...messageData,
-        conversationId: activeConversation.id,
+        if (activeConversation) {
+          socketClient.emit('message:send', {
+            ...messageData,
+            conversationId: activeConversation.id,
+          });
+        } else if (activeGroup) {
+          socketClient.emit('group:message:send', {
+            ...messageData,
+            groupId: activeGroup.id,
+          });
+        }
       });
-    } else if (activeGroup) {
-      socketClient.emit('group:message:send', {
-        ...messageData,
-        groupId: activeGroup.id,
-      });
-    }
-
-    setMessage('');
-    setIsTyping(false);
-    setShowEmojiPicker(false);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const uploadToast = toast.loading('Uploading image...');
-
-    try {
-      // 1. Get signed Cloudinary signature
-      const signatureResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/upload/signature`
-      );
-
-      const { signature, timestamp, cloudName, apiKey, folder } = signatureResponse.data;
-
-      // 2. Build form data for direct upload to Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('signature', signature);
-      formData.append('timestamp', timestamp);
-      formData.append('api_key', apiKey);
-      formData.append('folder', folder);
-
-      const uploadResponse = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudName.toLowerCase()}/image/upload`,
-        formData
-      );
-
-      const secureUrl = uploadResponse.data.secure_url;
-
-      // 3. Emit message with the uploaded image URL
+    } else if (message.trim()) {
       const messageData = {
-        content: '',
+        content: message.trim(),
         senderId: session?.user?.id,
-        imageUrl: secureUrl,
+        imageUrl: null,
       };
 
       if (activeConversation) {
@@ -162,12 +124,74 @@ export default function MessageInput() {
           groupId: activeGroup.id,
         });
       }
+    }
 
-      toast.success('Image sent successfully', { id: uploadToast });
+    setMessage('');
+    setSelectedImages([]);
+    setIsTyping(false);
+    setShowEmojiPicker(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const uploadToast = toast.loading(`Uploading ${files.length} image(s)...`);
+    const uploadedUrls: string[] = [];
+
+    try {
+      // Upload all files
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        try {
+          // 1. Get signed Cloudinary signature
+          const signatureResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/upload/signature`
+          );
+
+          const { signature, timestamp, cloudName, apiKey, folder } = signatureResponse.data;
+
+          // 2. Build form data for direct upload to Cloudinary
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('signature', signature);
+          formData.append('timestamp', timestamp);
+          formData.append('api_key', apiKey);
+          formData.append('folder', folder);
+
+          const uploadResponse = await axios.post(
+            `https://api.cloudinary.com/v1_1/${cloudName.toLowerCase()}/image/upload`,
+            formData
+          );
+
+          const secureUrl = uploadResponse.data.secure_url;
+          uploadedUrls.push(secureUrl);
+        } catch (error) {
+          console.error(`Error uploading file ${i + 1}:`, error);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        setSelectedImages((prev) => [...prev, ...uploadedUrls]);
+        toast.success(
+          `${uploadedUrls.length} image(s) uploaded. Click send to share`,
+          { id: uploadToast }
+        );
+      } else {
+        toast.error('Failed to upload images', { id: uploadToast });
+      }
     } catch (error: any) {
-      console.error('Error uploading image:', error);
-      const errorMsg = error.response?.data?.error?.message || 'Failed to upload image';
-      toast.error(errorMsg, { id: uploadToast });
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images', { id: uploadToast });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -184,6 +208,7 @@ export default function MessageInput() {
         ref={fileInputRef}
         onChange={handleImageUpload}
         accept="image/*"
+        multiple
         disabled={uploading}
         className="hidden"
       />
@@ -208,6 +233,47 @@ export default function MessageInput() {
               >
                 {emoji}
               </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Gallery */}
+      {selectedImages.length > 0 && (
+        <div className="bg-light-bg dark:bg-dark-sidebar border-t border-light-border dark:border-dark-border px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+              {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} ready to send
+            </p>
+            <button
+              onClick={() => setSelectedImages([])}
+              className="text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500 transition-colors"
+              aria-label="Clear all images"
+            >
+              Clear all
+            </button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {selectedImages.map((imageUrl, index) => (
+              <div
+                key={index}
+                className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-light-border dark:border-dark-border group"
+              >
+                <img
+                  src={imageUrl}
+                  alt={`preview-${index}`}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() =>
+                    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
+                  }
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove image"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -245,9 +311,9 @@ export default function MessageInput() {
 
         <button
           onClick={handleSend}
-          disabled={!message.trim()}
+          disabled={!message.trim() && selectedImages.length === 0}
           className={`p-2 rounded-full transition-colors cursor-pointer ${
-            message.trim()
+            (message.trim() || selectedImages.length > 0)
               ? 'bg-accent hover:bg-accent-hover text-white'
               : 'bg-light-hover dark:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary'
           }`}
