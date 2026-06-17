@@ -56,4 +56,36 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Update user profile image
+router.put('/:id/image', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'Image URL is required' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        image: imageUrl,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        isOnline: true,
+        lastSeen: true,
+      }
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating user image:', error);
+    res.status(500).json({ error: 'Failed to update user image' });
+  }
+});
+
 export default router;

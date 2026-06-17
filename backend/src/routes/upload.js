@@ -15,11 +15,13 @@ router.post('/signature', async (req, res) => {
   try {
     const timestamp = Math.round(new Date().getTime() / 1000);
     const folder = 'chatapp';
+    const public_id = `avatar_${Date.now()}`;
     
     const signature = cloudinary.utils.api_sign_request(
       {
         timestamp,
         folder,
+        public_id,
       },
       process.env.CLOUDINARY_API_SECRET
     );
@@ -27,6 +29,7 @@ router.post('/signature', async (req, res) => {
     res.json({
       signature,
       timestamp,
+      public_id,
       cloudName: process.env.CLOUDINARY_CLOUD_NAME,
       apiKey: process.env.CLOUDINARY_API_KEY,
       folder,

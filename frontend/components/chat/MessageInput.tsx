@@ -158,7 +158,7 @@ export default function MessageInput() {
             `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/upload/signature`
           );
 
-          const { signature, timestamp, cloudName, apiKey, folder } = signatureResponse.data;
+          const { signature, timestamp, cloudName, apiKey, folder, public_id } = signatureResponse.data;
 
           // 2. Build form data for direct upload to Cloudinary
           const formData = new FormData();
@@ -167,6 +167,7 @@ export default function MessageInput() {
           formData.append('timestamp', timestamp);
           formData.append('api_key', apiKey);
           formData.append('folder', folder);
+          formData.append('public_id', public_id);
 
           const uploadResponse = await axios.post(
             `https://api.cloudinary.com/v1_1/${cloudName.toLowerCase()}/image/upload`,
