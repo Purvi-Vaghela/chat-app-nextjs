@@ -290,4 +290,40 @@ router.get('/:conversationId/messages', async (req, res) => {
   }
 });
 
+// Clear chat for a user (marks all messages as deleted for that user)
+router.post('/:conversationId/clear', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Get all messages in the conversation
+    const messages = await prisma.message.findMany({
+      where: { conversationId }
+    });
+
+    // Mark all messages as deleted for this user
+    await Promise.all(
+      messages.map((message) =>
+        prisma.message.update({
+          where: { id: message.id },
+          data: {
+            deletedFor: {
+              push: userId
+            }
+          }
+        })
+      )
+    );
+
+    res.json({ success: true, message: 'Chat cleared successfully' });
+  } catch (error) {
+    console.error('Error clearing chat:', error);
+    res.status(500).json({ error: 'Failed to clear chat' });
+  }
+});
+
 export default router;

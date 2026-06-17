@@ -234,10 +234,10 @@ export default function ProfileModal({ isOpen, onClose, onImageUpdate }: Profile
               </p>
             </div>
           ) : (
-            <div className="bg-light-hover dark:bg-dark-hover rounded-lg p-3">
-              <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary text-center">
+            <div className="">
+              {/* <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary text-center">
                 Hover over your avatar and click the camera icon to change your profile picture
-              </p>
+              </p> */}
             </div>
           )}
 
@@ -281,7 +281,7 @@ export default function ProfileModal({ isOpen, onClose, onImageUpdate }: Profile
                     className="w-full bg-light-border dark:bg-dark-border hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-primary dark:text-dark-text-primary font-medium py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     <BsArrowCounterclockwise className="w-4 h-4" />
-                    Reset to Google Image
+                    Remove Photo
                   </button>
                 )}
 
