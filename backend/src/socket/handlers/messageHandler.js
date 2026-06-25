@@ -26,10 +26,13 @@ export const handleConversationMessage = (io) => (socket) => {
         }
       });
 
-      // Update conversation's updatedAt field
+      // Update conversation's updatedAt field and reset hiddenBy
       await prisma.conversation.update({
         where: { id: conversationId },
-        data: { updatedAt: new Date() }
+        data: { 
+          updatedAt: new Date(),
+          hiddenBy: []
+        }
       });
 
       // Broadcast message to conversation room

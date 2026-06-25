@@ -12,6 +12,11 @@ router.get('/user/:userId', async (req, res) => {
       where: {
         participantIds: {
           has: userId
+        },
+        NOT: {
+          hiddenBy: {
+            has: userId
+          }
         }
       },
       include: {
@@ -121,6 +126,18 @@ router.post('/find-or-create', async (req, res) => {
     });
     
     if (existingConversation) {
+      // If the conversation was hidden for userId1, unhide it
+      if (existingConversation.hiddenBy?.includes(userId1)) {
+        const updatedHiddenBy = existingConversation.hiddenBy.filter(id => id !== userId1);
+        await prisma.conversation.update({
+          where: { id: existingConversation.id },
+          data: {
+            hiddenBy: updatedHiddenBy
+          }
+        });
+        existingConversation.hiddenBy = updatedHiddenBy;
+      }
+
       const participants = await prisma.user.findMany({
         where: {
           id: {
@@ -323,6 +340,63 @@ router.post('/:conversationId/clear', async (req, res) => {
   } catch (error) {
     console.error('Error clearing chat:', error);
     res.status(500).json({ error: 'Failed to clear chat' });
+  }
+});
+
+// Delete/hide chat for a user (marks messages as deleted and hides conversation from list)
+router.post('/:conversationId/delete', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // 1. Get all messages in the conversation
+    const messages = await prisma.message.findMany({
+      where: { conversationId }
+    });
+
+    // 2. Mark all messages as deleted for this user
+    await Promise.all(
+      messages.map((message) => {
+        if (!message.deletedFor.includes(userId)) {
+          return prisma.message.update({
+            where: { id: message.id },
+            data: {
+              deletedFor: {
+                push: userId
+              }
+            }
+          });
+        }
+        return Promise.resolve();
+      })
+    );
+
+    // 3. Hide the conversation for this user
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId }
+    });
+
+    if (conversation) {
+      if (!conversation.hiddenBy.includes(userId)) {
+        await prisma.conversation.update({
+          where: { id: conversationId },
+          data: {
+            hiddenBy: {
+              push: userId
+            }
+          }
+        });
+      }
+    }
+
+    res.json({ success: true, message: 'Chat deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+    res.status(500).json({ error: 'Failed to delete chat' });
   }
 });
 

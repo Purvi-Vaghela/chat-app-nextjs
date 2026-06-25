@@ -68,6 +68,7 @@ model Conversation {
   
   participantIds String[]  @db.ObjectId
   messages       Message[]
+  hiddenBy       String[]  @db.ObjectId @default([])
 
   @@index([participantIds])
 }

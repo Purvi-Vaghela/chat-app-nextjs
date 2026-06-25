@@ -24,7 +24,7 @@ export default function UserList({ searchQuery = '', onSelectUser }: UserListPro
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const { setActiveConversation, onlineUsers } = useChatStore();
+  const { setActiveConversation, onlineUsers, fetchConversations } = useChatStore();
 
   useEffect(() => {
     fetchUsers();
@@ -57,6 +57,13 @@ export default function UserList({ searchQuery = '', onSelectUser }: UserListPro
       
       if (onSelectUser) {
         onSelectUser();
+      }
+      
+      // If the conversation is not in the sidebar list, reload the list
+      const state = useChatStore.getState();
+      const hasConv = state.conversations.some((c) => c.id === response.data.id);
+      if (!hasConv && session?.user?.id) {
+        await fetchConversations(session.user.id);
       }
       
       // Join conversation room via Socket.io
