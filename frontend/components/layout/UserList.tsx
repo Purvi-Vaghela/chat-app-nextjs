@@ -36,6 +36,12 @@ export default function UserList({ searchQuery = '', onSelectUser }: UserListPro
       // Filter out current user
       const filteredUsers = response.data.filter((u: User) => u.email !== session?.user?.email);
       setUsers(filteredUsers);
+
+      // Update onlineUsers store with fetched status
+      const chatStoreState = useChatStore.getState();
+      filteredUsers.forEach((u: User) => {
+        chatStoreState.setUserOnline(u.id, u.isOnline);
+      });
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');

@@ -92,13 +92,22 @@ export const useChatStore = create<ChatState>((set) => ({
         localStorage.removeItem('activeConversationId');
       }
     }
-    set({ 
-      activeConversation: conversation, 
-      activeGroup: null,
-      messages: conversation?.messages || [],
-      isSelectionMode: false,
-      selectedMessageIds: [],
-      isDeleteModalOpen: false
+    set((state) => {
+      const newOnlineUsers = new Set(state.onlineUsers);
+      conversation?.participants?.forEach((p: any) => {
+        if (p.isOnline) {
+          newOnlineUsers.add(p.id);
+        }
+      });
+      return { 
+        activeConversation: conversation, 
+        activeGroup: null,
+        messages: conversation?.messages || [],
+        isSelectionMode: false,
+        selectedMessageIds: [],
+        isDeleteModalOpen: false,
+        onlineUsers: newOnlineUsers
+      };
     });
   },
   setActiveGroup: (group) => {
@@ -183,7 +192,18 @@ export const useChatStore = create<ChatState>((set) => ({
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/conversations/user/${userId}`
       );
-      set({ conversations: response.data });
+      const conversations = response.data;
+      set((state) => {
+        const newOnlineUsers = new Set(state.onlineUsers);
+        conversations.forEach((conv: any) => {
+          conv.participants?.forEach((p: any) => {
+            if (p.isOnline && p.id !== userId) {
+              newOnlineUsers.add(p.id);
+            }
+          });
+        });
+        return { conversations, onlineUsers: newOnlineUsers };
+      });
     } catch (error) {
       console.error('Error fetching conversations:', error);
     }
