@@ -47,9 +47,11 @@ export const handleConversationMessage = (io) => (socket) => {
       if (conversation) {
         conversation.participantIds.forEach((pId) => {
           if (pId !== senderId) {
-            const socketId = activeUsers.get(pId);
-            if (socketId) {
-              io.to(socketId).emit('message:new', message);
+            const socketIds = activeUsers.get(pId);
+            if (socketIds) {
+              socketIds.forEach((sId) => {
+                io.to(sId).emit('message:new', message);
+              });
             }
           }
         });
@@ -110,9 +112,11 @@ export const handleGroupMessage = (io) => (socket) => {
       if (group) {
         group.members.forEach((m) => {
           if (m.userId !== senderId) {
-            const socketId = activeUsers.get(m.userId);
-            if (socketId) {
-              io.to(socketId).emit('group:message:new', message);
+            const socketIds = activeUsers.get(m.userId);
+            if (socketIds) {
+              socketIds.forEach((sId) => {
+                io.to(sId).emit('group:message:new', message);
+              });
             }
           }
         });
