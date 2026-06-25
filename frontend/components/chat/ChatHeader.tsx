@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 export default function ChatHeader() {
   const { data: session } = useSession();
-  const { activeConversation, activeGroup, onlineUsers, setActiveConversation, fetchConversations } = useChatStore();
+  const { activeConversation, activeGroup, onlineUsers, setActiveConversation, setActiveGroup, fetchConversations } = useChatStore();
   const [showMenu, setShowMenu] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
