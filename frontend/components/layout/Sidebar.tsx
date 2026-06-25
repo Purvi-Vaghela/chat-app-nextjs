@@ -20,7 +20,7 @@ export default function Sidebar() {
   if (!session) return null;
 
   return (
-    <div className={`h-full bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex flex-col ${
+    <div className={`h-full bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex-col ${
       hasActiveChat ? 'hidden md:flex md:w-[400px]' : 'flex w-full md:w-[400px]'
     }`}>
       {/* Header */}
