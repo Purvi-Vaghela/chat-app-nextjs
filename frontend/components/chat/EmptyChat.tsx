@@ -4,7 +4,7 @@ import { BsChatDots } from 'react-icons/bs';
 
 export default function EmptyChat() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-light-chat dark:bg-dark-chat text-light-text-secondary dark:text-dark-text-secondary">
+    <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-light-chat dark:bg-dark-chat text-light-text-secondary dark:text-dark-text-secondary">
       <div className="text-center max-w-md px-6">
         <div className="inline-flex items-center justify-center w-24 h-24 bg-accent/10 rounded-full mb-6">
           <BsChatDots className="w-12 h-12 text-accent" />

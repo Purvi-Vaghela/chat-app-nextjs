@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useChatStore } from '@/store/chatStore';
-import { BsPeopleFill, BsThreeDotsVertical, BsTrash } from 'react-icons/bs';
+import { BsPeopleFill, BsThreeDotsVertical, BsTrash, BsArrowLeft } from 'react-icons/bs';
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
@@ -93,6 +93,18 @@ export default function ChatHeader() {
     <>
       <div className="h-16 bg-light-bg dark:bg-dark-sidebar border-b border-light-border dark:border-dark-border px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          {/* Back button for mobile */}
+          <button
+            onClick={() => {
+              setActiveConversation(null);
+              setActiveGroup(null);
+            }}
+            className="md:hidden p-1.5 rounded-full hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary transition-colors mr-1 cursor-pointer"
+            aria-label="Back to chat list"
+          >
+            <BsArrowLeft className="w-6 h-6" />
+          </button>
+
           {isGroup ? (
             <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
               <BsPeopleFill className="w-5 h-5" />

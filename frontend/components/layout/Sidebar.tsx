@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { BsPeopleFill, BsChatDots, BsSearch, BsX } from 'react-icons/bs';
+import { useChatStore } from '@/store/chatStore';
 import UserList from './UserList';
 import GroupList from './GroupList';
 import SidebarHeader from './SidebarHeader';
@@ -12,11 +13,16 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<'chats' | 'groups'>('chats');
   const [searchQuery, setSearchQuery] = useState('');
+  const { activeConversation, activeGroup } = useChatStore();
+
+  const hasActiveChat = !!activeConversation || !!activeGroup;
 
   if (!session) return null;
 
   return (
-    <div className="w-full md:w-[400px] h-full bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex flex-col">
+    <div className={`h-full bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex flex-col ${
+      hasActiveChat ? 'hidden md:flex md:w-[400px]' : 'flex w-full md:w-[400px]'
+    }`}>
       {/* Header */}
       <SidebarHeader />
 
