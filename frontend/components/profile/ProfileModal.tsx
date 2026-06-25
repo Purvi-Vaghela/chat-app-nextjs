@@ -196,28 +196,15 @@ export default function ProfileModal({ isOpen, onClose, onImageUpdate }: Profile
 
           <div className="space-y-6">
             <div className="flex flex-col items-center gap-4">
-              <div className="relative group">
+              <div className="relative w-24 h-24">
                 {currentImage && !showConfirmation ? (
-                  <>
-                    <img
-                      src={currentImage}
-                      alt={session.user.name || 'User'}
-                      className="w-24 h-24 rounded-full object-cover border-4 border-accent cursor-pointer hover:opacity-80 transition-opacity"
-                      referrerPolicy="no-referrer"
-                      onClick={() => setZoomedImage(currentImage)}
-                    />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        fileInputRef.current?.click();
-                      }}
-                      disabled={uploading}
-                      className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:opacity-75 cursor-pointer"
-                      aria-label="Change profile picture"
-                    >
-                      <BsImage className="w-8 h-8 text-white" />
-                    </button>
-                  </>
+                  <img
+                    src={currentImage}
+                    alt={session.user.name || 'User'}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-accent cursor-pointer hover:opacity-80 transition-opacity"
+                    referrerPolicy="no-referrer"
+                    onClick={() => setZoomedImage(currentImage)}
+                  />
                 ) : previewUrl && showConfirmation ? (
                   <img
                     src={previewUrl}
@@ -228,6 +215,21 @@ export default function ProfileModal({ isOpen, onClose, onImageUpdate }: Profile
                   <div className="w-24 h-24 rounded-full bg-accent flex items-center justify-center text-white text-4xl font-semibold border-4 border-accent">
                     {session.user.name?.[0]?.toUpperCase() || 'U'}
                   </div>
+                )}
+
+                {/* Upload badge button (only visible when not confirming preview) */}
+                {!showConfirmation && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    disabled={uploading}
+                    className="absolute bottom-0 right-0 bg-accent hover:bg-accent-hover text-white rounded-full p-2 shadow-md transition-all cursor-pointer border-2 border-white dark:border-dark-sidebar flex items-center justify-center"
+                    aria-label="Change profile picture"
+                  >
+                    <BsImage className="w-4 h-4" />
+                  </button>
                 )}
               </div>
 
