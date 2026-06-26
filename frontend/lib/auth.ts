@@ -5,11 +5,6 @@ import { prisma } from "./prisma";
 
 // Validate environment variables at load time
 const validateEnv = () => {
-  // Skip validation during the Next.js build phase to prevent compile errors
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return;
-  }
-
   const required = {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
@@ -19,7 +14,7 @@ const validateEnv = () => {
 
   for (const [key, value] of Object.entries(required)) {
     if (!value) {
-      throw new Error(`Missing required environment variable: ${key}`);
+      console.warn(`[Warning] Missing environment variable: ${key}`);
     }
   }
 };

@@ -56,10 +56,7 @@ export default function SignInPage() {
             <div className="w-2 h-2 bg-accent rounded-full"></div>
             <span>Group chats & media sharing</span>
           </div>
-          <div className="flex items-center justify-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
-            <div className="w-2 h-2 bg-accent rounded-full"></div>
-            <span>Online presence & typing indicators</span>
-          </div>
+          
         </div>
       </div>
     </div>
